@@ -1,8 +1,7 @@
 const User = require('../models/UserModel');
 const Transaction = require('../models/TransactionModel');
 const querystring = require('querystring');
-const bcrypt = require('bcrypt');
-const sha1 = require('crypto-js/sha1');
+const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
 
@@ -211,7 +210,7 @@ class WalletController {
       delete requestData.key;
   
       const queryString = querystring.stringify(requestData);
-      const hash = sha1(this.salt + queryString);
+      const hash = crypto.createHash('sha1').update(this.salt + queryString).digest('hex');
   
       return key === hash;
   }
