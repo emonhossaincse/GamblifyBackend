@@ -33,11 +33,11 @@ class WalletController {
   
 
   async getBalance(req, res) {
-    // if (!this.checkRequestIntegrity(req)) {
-    //    const reqdata = req.query;
-    //    return res.status(403).json({ status: '403', message: `Request integrity check failed ${JSON.stringify(reqdata)}` });
+    if (!this.checkRequestIntegrity(req)) {
+       const reqdata = req.query;
+       return res.status(403).json({ status: '403', message: `Request integrity check failed ${JSON.stringify(reqdata)}` });
 
-    // }
+    }
 
     try {
       const { remote_id, username, session_id } = req.query;
@@ -212,10 +212,10 @@ class WalletController {
     const key = requestData.key;
     delete requestData.key;
 
-    const sortedData = {};
-    Object.keys(requestData).sort().forEach(function(key) {
-        sortedData[key] = requestData[key];
-    });
+    const sortedData = Object.keys(requestData).sort().reduce((acc, key) => {
+        acc[key] = requestData[key];
+        return acc;
+    }, {});
 
     const queryString = querystring.stringify(sortedData);
     const hash = crypto.createHash('sha1').update(this.salt + queryString).digest('hex');
