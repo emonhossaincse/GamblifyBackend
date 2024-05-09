@@ -43,7 +43,7 @@ class WalletController {
         const { remote_id, username } = req.query;
 
         // Acquire the lock
-        const release = await mutex.acquire();
+        const release = await Mutex.acquire();
 
         try {
             // Perform the database operation within the locked section
@@ -78,7 +78,7 @@ async debit(req, res) {
   try {
       const { remote_id, username, amount, transaction_id } = req.query;
 
-      const release = await mutex.acquire(); // Acquire the lock
+      const release = await Mutex.acquire(); // Acquire the lock
 
       try {
           const user = await User.findOneAndUpdate(
@@ -146,7 +146,7 @@ async credit(req, res) {
       let { amount } = req.query;
       amount = parseInt(amount); // Convert amount to number
 
-      const release = await mutex.acquire(); // Acquire the lock
+      const release = await Mutex.acquire(); // Acquire the lock
 
       try {
           const user = await User.findOneAndUpdate(
