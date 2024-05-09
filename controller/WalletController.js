@@ -13,55 +13,55 @@ class WalletController {
     this.apiPassword = process.env.API_PASSWORD;
     this.apiLogin = process.env.API_LOGIN;
     this.salt = process.env.SALT;
+    this.mutex = new Mutex(); // Create an instance of Mutex
     this.handleRequest = this.handleRequest.bind(this);
-  }
+}
 
-  async handleRequest(req, res) {
-    const action = req.query.action; // Extract action from query string
-  
-    switch (action) {
+
+async handleRequest(req, res) {
+  const action = req.query.action; // Extract action from query string
+
+  switch (action) {
       case 'balance':
-        return this.getBalance(req, res);
+          return this.getBalance(req, res);
       case 'debit':
-        return this.debit(req, res);
+          return this.debit(req, res);
       case 'credit':
-        return this.credit(req, res);
+          return this.credit(req, res);
       case 'rollback':
-        return this.rollback(req, res);
+          return this.rollback(req, res);
       default:
-        return res.status(400).json({ status: '400', message: `Invalid action: ${action}` });
-    }
+          return res.status(400).json({ status: '400', message: `Invalid action: ${action}` });
   }
-  
+}
+async getBalance(req, res) {
+  if (!this.checkRequestIntegrity(req)) {
+      return res.status(403).json({ status: '403', message: `Request integrity check failed` });
+  }
 
-  async getBalance(req, res) {
-    if (!this.checkRequestIntegrity(req)) {
-        return res.status(403).json({ status: '403', message: `Request integrity check failed` });
-    }
+  try {
+      const { remote_id, username } = req.query;
 
-    try {
-        const { remote_id, username } = req.query;
+      // Acquire the lock
+      const release = await this.mutex.acquire();
 
-        // Acquire the lock
-        const release = await Mutex.acquire();
+      try {
+          // Perform the database operation within the locked section
+          const user = await User.findOne({ remote_id, username }).select('balance');
 
-        try {
-            // Perform the database operation within the locked section
-            const user = await User.findOne({ remote_id, username }).select('balance');
+          if (!user) {
+              return res.status(404).json({ status: '404', message: 'User not found' });
+          }
 
-            if (!user) {
-                return res.status(404).json({ status: '404', message: 'User not found' });
-            }
-
-            return res.status(200).json({ status: '200', balance: user.balance });
-        } finally {
-            // Release the lock once the operation is done
-            release();
-        }
-    } catch (error) {
-        console.error('Error getting balance:', error);
-        return res.status(500).json({ status: '500', message: 'Internal server error' });
-    }
+          return res.status(200).json({ status: '200', balance: user.balance });
+      } finally {
+          // Release the lock once the operation is done
+          release();
+      }
+  } catch (error) {
+      console.error('Error getting balance:', error);
+      return res.status(500).json({ status: '500', message: 'Internal server error' });
+  }
 }
 
 
@@ -78,7 +78,7 @@ async debit(req, res) {
   try {
       const { remote_id, username, amount, transaction_id } = req.query;
 
-      const release = await Mutex.acquire(); // Acquire the lock
+      const release = await this.mutex.acquire();
 
       try {
           const user = await User.findOneAndUpdate(
@@ -146,12 +146,13 @@ async credit(req, res) {
       return res.status(400).json({ status: '400', errors: errors.array() });
   }
 
+
   try {
       const { remote_id, username, transaction_id } = req.query;
       let { amount } = req.query;
       amount = parseInt(amount); // Convert amount to number
 
-      const release = await Mutex.acquire(); // Acquire the lock
+      const release = await this.mutex.acquire();
 
       try {
           const user = await User.findOneAndUpdate(
@@ -205,7 +206,7 @@ async rollback(req, res) {
   try {
       const { remote_id, username, transaction_id } = req.query;
 
-      const release = await Mutex.acquire(); // Acquire the lock
+      const release = await this.mutex.acquire();
 
       try {
           const user = await User.findOneAndUpdate(
