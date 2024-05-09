@@ -1,6 +1,7 @@
 const User = require('../models/UserModel');
 const Transaction = require('../models/TransactionModel');
 const bcrypt = require('bcrypt');
+const sha1 = require('crypto-js/sha1');
 const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
 
