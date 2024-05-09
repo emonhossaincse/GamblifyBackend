@@ -52,9 +52,7 @@ class WalletController {
   }
 
   async debit(req, res) {
-    if (!this.checkRequestIntegrity(req)) {
-      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
-    }
+   
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
