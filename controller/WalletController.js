@@ -213,7 +213,7 @@ class WalletController {
     delete requestData.key;
 
     const queryString = querystring.stringify(requestData);
-    const hash = crypto.createHash('sha1').update(salt + queryString).digest('hex');
+    const hash = crypto.createHash('sha1').update(this.salt + queryString).digest('hex');
 
     return key === hash;
 }
