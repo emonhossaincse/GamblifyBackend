@@ -200,7 +200,7 @@ async rollback(req, res) {
   try {
       const { remote_id, username, transaction_id } = req.query;
 
-      const release = await mutex.acquire(); // Acquire the lock
+      const release = await Mutex.acquire(); // Acquire the lock
 
       try {
           const user = await User.findOneAndUpdate(
