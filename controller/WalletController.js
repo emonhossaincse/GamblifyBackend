@@ -208,16 +208,15 @@ class WalletController {
   }
   
   checkRequestIntegrity(req) {
-    const requestData =  req.query;
-    const key = req.key;
-    delete req.key;
+    const requestData = { ...req.query }; 
+    const key = requestData.key;
+    delete requestData.key;
 
     const queryString = querystring.stringify(requestData);
     const hash = crypto.createHash('sha1').update(salt + queryString).digest('hex');
 
     return key === hash;
 }
-
 
   
 }
