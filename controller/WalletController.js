@@ -94,6 +94,11 @@ async debit(req, res) {
               return res.status(403).json({ status: '403', message: 'Insufficient funds' });
           }
 
+          const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
+          if (existingTransaction) {
+              return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
+          }
+
           if (amount < 0) {
               return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
           }
