@@ -4,6 +4,8 @@ const querystring = require('querystring');
 const crypto = require('crypto');
 const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
+const { Mutex } = require('async-mutex');
+
 
 class WalletController {
   constructor() {
@@ -34,192 +36,220 @@ class WalletController {
 
   async getBalance(req, res) {
     if (!this.checkRequestIntegrity(req)) {
-       
-       return res.status(403).json({ status: '403', message: `Request integrity check failed` });
-
+        return res.status(403).json({ status: '403', message: `Request integrity check failed` });
     }
 
     try {
-      const { remote_id, username } = req.query;
+        const { remote_id, username } = req.query;
 
-      const user = await User.findOne({ remote_id, username }).select('balance');
+        // Acquire the lock
+        const release = await mutex.acquire();
 
-      if (!user) {
-        return res.status(404).json({ status: '404', message: 'User not found' });
-      }
+        try {
+            // Perform the database operation within the locked section
+            const user = await User.findOne({ remote_id, username }).select('balance');
 
-      return res.status(200).json({ status: '200', balance: user.balance });
+            if (!user) {
+                return res.status(404).json({ status: '404', message: 'User not found' });
+            }
+
+            return res.status(200).json({ status: '200', balance: user.balance });
+        } finally {
+            // Release the lock once the operation is done
+            release();
+        }
     } catch (error) {
-      console.error('Error getting balance:', error);
-      return res.status(500).json({ status: '500', message: 'Internal server error' });
+        console.error('Error getting balance:', error);
+        return res.status(500).json({ status: '500', message: 'Internal server error' });
     }
+}
+
+
+async debit(req, res) {
+  if (!this.checkRequestIntegrity(req)) {
+      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
   }
 
-  async debit(req, res) {
-    if (!this.checkRequestIntegrity(req)) {
-      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
-    }
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+      return res.status(400).json({ status: '400', errors: 'Validation Failed' });
+  }
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ status: '400', errors: 'Validation Faild' });
-    }
-
-    try {
+  try {
       const { remote_id, username, amount, transaction_id } = req.query;
 
-      const user = await User.findOneAndUpdate(
-        { remote_id, username },
-        { new: true }
-      );
+      const release = await mutex.acquire(); // Acquire the lock
 
-      if (!user) {
-        return res.status(404).json({ status: '404', message: 'User not found or insufficient funds' });
+      try {
+          const user = await User.findOneAndUpdate(
+              { remote_id, username },
+              { new: true }
+          );
 
+          if (!user) {
+              return res.status(404).json({ status: '404', message: 'User not found or insufficient funds' });
+          }
 
+          if (amount > user.balance) {
+              return res.status(403).json({ status: '403', message: 'Insufficient funds' });
+          }
+
+          if (amount < 0) {
+              return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
+          }
+
+          const transaction = await Transaction.findOne({ transaction_id });
+
+          if (transaction) {
+              return res.status(200).json({ status: '200', balance: user.balance });
+          }
+
+          await Transaction.create({
+              action: 'debit',
+              remote_id,
+              amount,
+              transaction_id,
+              provider: req.query.provider,
+              game_id: req.query.game_id,
+              gameplay_final: req.query.gameplay_final,
+              round_id: req.query.round_id,
+              game_id_hash: req.query.game_id_hash,
+              session_id: req.query.session_id,
+              gamesession_id: req.query.gamesession_id,
+          });
+
+          user.balance -= amount;
+          await user.save();
+
+          return res.status(200).json({ status: '200', balance: user.balance });
+      } finally {
+          release(); // Release the lock
       }
-      if (amount > user.balance) {
-        return res.status(403).json({ status: '403', message: 'insufficient funds' });
-      }
-
-      if (amount < 0) {
-        return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
-      }
-      const transaction = await Transaction.findOne({ transaction_id });
-
-      if (transaction) {
-        return res.status(200).json({ status: '200', balance: user.balance });
-    }
-
-
-      await Transaction.create({
-        action: 'debit',
-        remote_id,
-        amount,
-        transaction_id,
-        provider: req.query.provider,
-        game_id: req.query.game_id,
-        gameplay_final: req.query.gameplay_final,
-        round_id: req.query.round_id,
-        game_id_hash: req.query.game_id_hash,
-        session_id: req.query.session_id,
-        gamesession_id: req.query.gamesession_id,
-      });
-      user.balance -= amount;
-      await user.save();
-
-      return res.status(200).json({ status: '200', balance: user.balance });
-    } catch (error) {
+  } catch (error) {
       console.error('Error debiting balance:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error' });
-    }
+  }
+}
+
+async credit(req, res) {
+  if (!this.checkRequestIntegrity(req)) {
+      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
   }
 
-  async credit(req, res) {
-    if (!this.checkRequestIntegrity(req)) {
-      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
-    }
-  
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
       return res.status(400).json({ status: '400', errors: errors.array() });
-    }
-  
-    try {
+  }
+
+  try {
       const { remote_id, username, transaction_id } = req.query;
       let { amount } = req.query;
       amount = parseInt(amount); // Convert amount to number
-  
-      const user = await User.findOneAndUpdate(
-        { remote_id, username },
-        { new: true }
-      );
-  
-      if (!user) {
-        return res.status(404).json({ status: '404', message: 'User not found' });
+
+      const release = await mutex.acquire(); // Acquire the lock
+
+      try {
+          const user = await User.findOneAndUpdate(
+              { remote_id, username },
+              { new: true }
+          );
+
+          if (!user) {
+              return res.status(404).json({ status: '404', message: 'User not found' });
+          }
+
+          const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
+          if (existingTransaction) {
+              return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
+          }
+
+          if (amount < 0) {
+              return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
+          }
+
+          await Transaction.create({
+              action: 'credit',
+              remote_id,
+              amount,
+              provider: req.query.provider,
+              game_id: req.query.game_id,
+              transaction_id,
+              gameplay_final: req.query.gameplay_final,
+              round_id: req.query.round_id,
+              game_id_hash: req.query.game_id_hash,
+              session_id: req.query.session_id,
+              gamesession_id: req.query.gamesession_id,
+          });
+
+          user.balance += amount;
+          await user.save();
+
+          return res.status(200).json({ status: '200', balance: user.balance });
+      } finally {
+          release(); // Release the lock
       }
-  
-      const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
-      if (existingTransaction) {
-        return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
-      }
-  
-      if (amount < 0) {
-        return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
-      }
-  
-      await Transaction.create({
-        action: 'credit',
-        remote_id,
-        amount,
-        provider: req.query.provider,
-        game_id: req.query.game_id,
-        transaction_id,
-        gameplay_final: req.query.gameplay_final,
-        round_id: req.query.round_id,
-        game_id_hash: req.query.game_id_hash,
-        session_id: req.query.session_id,
-        gamesession_id: req.query.gamesession_id,
-      });
-  
-      user.balance += amount;
-      await user.save();
-  
-      return res.status(200).json({ status: '200', balance: user.balance });
-    } catch (error) {
+  } catch (error) {
       console.error('Error crediting balance:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error' });
-    }
+  }
 }
+
 
 
 async rollback(req, res) {
   try {
       const { remote_id, username, transaction_id } = req.query;
 
-      const user = await User.findOneAndUpdate(
-          { remote_id, username },
-          { new: true }
-      );
+      const release = await mutex.acquire(); // Acquire the lock
 
-      if (!user) {
-          return res.status(404).json({ status: '404', message: 'User not found' });
-      }
+      try {
+          const user = await User.findOneAndUpdate(
+              { remote_id, username },
+              { new: true }
+          );
 
-      // Find the transaction to rollback
-      const transaction = await Transaction.findOne({ transaction_id });
+          if (!user) {
+              return res.status(404).json({ status: '404', message: 'User not found' });
+          }
 
-      if (!transaction) {
-          return res.status(404).json({ status: '404', message: 'TRANSACTION_NOT_FOUND' });
-      }
+          // Find the transaction to rollback
+          const transaction = await Transaction.findOne({ transaction_id });
 
-      // Check if the transaction key is already set to '1'
-      if (transaction.key === '1') {
+          if (!transaction) {
+              return res.status(404).json({ status: '404', message: 'TRANSACTION_NOT_FOUND' });
+          }
+
+          // Check if the transaction key is already set to '1'
+          if (transaction.key === '1') {
+              return res.status(200).json({ status: '200', balance: user.balance });
+          }
+
+          // Reverse the transaction
+          if (transaction.action === 'debit') {
+              user.balance += transaction.amount;
+          } else if (transaction.action === 'credit') {
+              user.balance -= transaction.amount;
+          } else {
+              return res.status(400).json({ status: '400', message: 'Invalid transaction type for rollback' });
+          }
+
+          // Update the user's balance
+          await user.save();
+
+          // Set the transaction key to '1'
+          transaction.key = '1';
+          await transaction.save();
+
           return res.status(200).json({ status: '200', balance: user.balance });
+      } finally {
+          release(); // Release the lock
       }
-
-      // Reverse the transaction
-      if (transaction.action === 'debit') {
-          user.balance += transaction.amount;
-      } else if (transaction.action === 'credit') {
-          user.balance -= transaction.amount;
-      } else {
-          return res.status(400).json({ status: '400', message: 'Invalid transaction type for rollback' });
-      }
-
-      // Update the user's balance
-      await user.save();
-
-      // Set the transaction key to '1'
-      transaction.key = '1';
-      await transaction.save();
-
-      return res.status(200).json({ status: '200', balance: user.balance });
   } catch (error) {
       console.error('Error rolling back transaction:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error during rollback' });
   }
 }
+
 
   
   checkRequestIntegrity(req) {
