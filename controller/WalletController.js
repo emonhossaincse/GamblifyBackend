@@ -25,7 +25,7 @@ class WalletController {
       case 'rollback':
         return this.rollback(req, res);
       default:
-        return res.status(400).json({ status: '400', message: 'Action Failed' });
+        return res.status(400).json({ status: '400', message: action });
     }
   }
 
