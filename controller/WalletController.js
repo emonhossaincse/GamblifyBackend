@@ -150,7 +150,7 @@ class WalletController {
       user.balance += amount;
       await user.save();
   
-      return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'true' });
+      return res.status(200).json({ status: '200', balance: user.balance });
     } catch (error) {
       console.error('Error crediting balance:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error' });
@@ -158,54 +158,54 @@ class WalletController {
 }
 
 
-  async rollback(req, res) {
-    try {
-      const { remote_id, username, transaction_id, session_id } = req.query;
-  
+async rollback(req, res) {
+  try {
+      const { remote_id, username, transaction_id } = req.query;
+
       const user = await User.findOneAndUpdate(
-        { remote_id, username },
-        { $inc: { balance: transaction.amount } },
-        { new: true }
+          { remote_id, username },
+          { new: true }
       );
-  
+
       if (!user) {
-        return res.status(404).json({ status: '404', message: 'User not found' });
+          return res.status(404).json({ status: '404', message: 'User not found' });
       }
-  
+
       // Find the transaction to rollback
       const transaction = await Transaction.findOne({ transaction_id });
-  
+
       if (!transaction) {
-        return res.status(404).json({ status: '404', message: 'TRANSACTION_NOT_FOUND' });
+          return res.status(404).json({ status: '404', message: 'TRANSACTION_NOT_FOUND' });
       }
-  
+
       // Check if the transaction key is already set to '1'
       if (transaction.key === '1') {
-        return res.status(200).json({ status: '200', balance: user.balance });
+          return res.status(200).json({ status: '200', balance: user.balance });
       }
-  
+
       // Reverse the transaction
       if (transaction.action === 'debit') {
-        user.balance += transaction.amount;
+          user.balance += transaction.amount;
       } else if (transaction.action === 'credit') {
-        user.balance -= transaction.amount;
+          user.balance -= transaction.amount;
       } else {
-        return res.status(400).json({ status: '400', message: 'Invalid transaction type for rollback' });
+          return res.status(400).json({ status: '400', message: 'Invalid transaction type for rollback' });
       }
-  
+
       // Update the user's balance
       await user.save();
-  
+
       // Set the transaction key to '1'
       transaction.key = '1';
       await transaction.save();
-  
+
       return res.status(200).json({ status: '200', balance: user.balance });
-    } catch (error) {
+  } catch (error) {
       console.error('Error rolling back transaction:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error during rollback' });
-    }
   }
+}
+
   
   checkRequestIntegrity(req) {
     const requestData = { ...req.query }; 
