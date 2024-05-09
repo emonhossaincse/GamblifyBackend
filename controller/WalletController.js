@@ -57,7 +57,7 @@ class WalletController {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ status: '400', errors: errors.array() });
+      return res.status(400).json({ status: '400', errors: 'Validation Faild' });
     }
 
     try {
