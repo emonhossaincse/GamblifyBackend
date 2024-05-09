@@ -1,5 +1,6 @@
 const User = require('../models/UserModel');
 const Transaction = require('../models/TransactionModel');
+const querystring = require('querystring');
 const bcrypt = require('bcrypt');
 const sha1 = require('crypto-js/sha1');
 const { validationResult } = require('express-validator');
@@ -204,15 +205,17 @@ class WalletController {
   }
   
 
-  checkRequestIntegrity(req) {
-    const requestData = { ...req.body };
-    const key = requestData.key;
-    delete requestData.key;
-
-    const hash = sha1(this.salt + JSON.stringify(requestData));
-
-    return key === hash;
+    checkRequestIntegrity(req) {
+      const requestData = { ...req.body };
+      const key = requestData.key;
+      delete requestData.key;
+  
+      const queryString = querystring.stringify(requestData);
+      const hash = sha1(this.salt + queryString);
+  
+      return key === hash;
   }
+  
 }
 
 module.exports = new WalletController();
