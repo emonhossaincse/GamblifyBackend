@@ -10,11 +10,12 @@ class WalletController {
     this.apiPassword = process.env.API_PASSWORD;
     this.apiLogin = process.env.API_LOGIN;
     this.salt = process.env.SALT;
+    this.handleRequest = this.handleRequest.bind(this);
   }
 
   async handleRequest(req, res) {
-    const action = req.body.action;
-
+    const action = req.query.action; // Extract action from query string
+  
     switch (action) {
       case 'balance':
         return this.getBalance(req, res);
@@ -25,9 +26,10 @@ class WalletController {
       case 'rollback':
         return this.rollback(req, res);
       default:
-        return res.status(400).json({ status: '400', message: action });
+        return res.status(400).json({ status: '400', message: `Invalid action: ${action}` });
     }
   }
+  
 
   async getBalance(req, res) {
     if (!this.checkRequestIntegrity(req)) {
