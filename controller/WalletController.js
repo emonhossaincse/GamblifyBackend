@@ -78,9 +78,11 @@ async debit(req, res) {
   try {
       const { remote_id, username, amount, transaction_id } = req.query;
 
+      // Acquire the mutex lock
       const release = await this.mutex.acquire();
 
       try {
+          // Find the user and lock the document
           const user = await User.findOneAndUpdate(
               { remote_id, username },
               { $set: { locked: true } },
@@ -95,6 +97,7 @@ async debit(req, res) {
               return res.status(403).json({ status: '403', message: 'Insufficient funds' });
           }
 
+          // Check if the transaction already exists
           const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
           if (existingTransaction) {
               return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
@@ -104,12 +107,7 @@ async debit(req, res) {
               return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
           }
 
-          const transaction = await Transaction.findOne({ transaction_id });
-
-          if (transaction) {
-              return res.status(200).json({ status: '200', balance: user.balance });
-          }
-
+          // Create the transaction
           await Transaction.create({
               action: 'debit',
               remote_id,
@@ -124,18 +122,21 @@ async debit(req, res) {
               gamesession_id: req.query.gamesession_id,
           });
 
+          // Update the user's balance
           user.balance -= amount;
           await user.save();
 
           return res.status(200).json({ status: '200', balance: user.balance });
       } finally {
-          release(); // Release the lock
+          // Release the lock
+          release();
       }
   } catch (error) {
       console.error('Error debiting balance:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error' });
   }
 }
+
 
 async credit(req, res) {
   if (!this.checkRequestIntegrity(req)) {
@@ -147,15 +148,16 @@ async credit(req, res) {
       return res.status(400).json({ status: '400', errors: errors.array() });
   }
 
-
   try {
       const { remote_id, username, transaction_id } = req.query;
       let { amount } = req.query;
       amount = parseInt(amount); // Convert amount to number
 
+      // Acquire the mutex lock
       const release = await this.mutex.acquire();
 
       try {
+          // Find the user and lock the document
           const user = await User.findOneAndUpdate(
               { remote_id, username },
               { $set: { locked: true } },
@@ -166,6 +168,7 @@ async credit(req, res) {
               return res.status(404).json({ status: '404', message: 'User not found' });
           }
 
+          // Check if the transaction already exists
           const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
           if (existingTransaction) {
               return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
@@ -175,6 +178,7 @@ async credit(req, res) {
               return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
           }
 
+          // Create the transaction
           await Transaction.create({
               action: 'credit',
               remote_id,
@@ -189,12 +193,14 @@ async credit(req, res) {
               gamesession_id: req.query.gamesession_id,
           });
 
+          // Update the user's balance
           user.balance += amount;
           await user.save();
 
           return res.status(200).json({ status: '200', balance: user.balance });
       } finally {
-          release(); // Release the lock
+          // Release the lock
+          release();
       }
   } catch (error) {
       console.error('Error crediting balance:', error);
@@ -204,13 +210,16 @@ async credit(req, res) {
 
 
 
+
 async rollback(req, res) {
   try {
       const { remote_id, username, transaction_id } = req.query;
 
+      // Acquire the mutex lock
       const release = await this.mutex.acquire();
 
       try {
+          // Find the user and lock the document
           const user = await User.findOneAndUpdate(
               { remote_id, username },
               { $set: { locked: true } },
@@ -251,7 +260,8 @@ async rollback(req, res) {
 
           return res.status(200).json({ status: '200', balance: user.balance });
       } finally {
-          release(); // Release the lock
+          // Release the lock
+          release();
       }
   } catch (error) {
       console.error('Error rolling back transaction:', error);
