@@ -47,7 +47,7 @@ async getBalance(req, res) {
 
       try {
           // Perform the database operation within the locked section
-          const user = await User.findOne({ remote_id, username }).select('balance');
+          const user = await User.findOne({ remote_id, username, }).select('balance');
 
           if (!user) {
               return res.status(404).json({ status: '404', message: 'User not found' });
@@ -83,6 +83,7 @@ async debit(req, res) {
       try {
           const user = await User.findOneAndUpdate(
               { remote_id, username },
+              { $set: { locked: true } },
               { new: true }
           );
 
@@ -157,6 +158,7 @@ async credit(req, res) {
       try {
           const user = await User.findOneAndUpdate(
               { remote_id, username },
+              { $set: { locked: true } },
               { new: true }
           );
 
@@ -211,6 +213,7 @@ async rollback(req, res) {
       try {
           const user = await User.findOneAndUpdate(
               { remote_id, username },
+              { $set: { locked: true } },
               { new: true }
           );
 
