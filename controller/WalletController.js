@@ -205,16 +205,22 @@ class WalletController {
   }
   
 
-    checkRequestIntegrity(req) {
-      const requestData = { ...req.body };
-      const key = requestData.key;
-      delete requestData.key;
-  
-      const queryString = querystring.stringify(requestData);
-      const hash = crypto.createHash('sha1').update(this.salt + queryString).digest('hex');
-  
-      return key === hash;
-  }
+  checkRequestIntegrity(req) {
+    const requestData = { ...req.body };
+    const key = requestData.key;
+    delete requestData.key;
+
+    const sortedData = {};
+    Object.keys(requestData).sort().forEach(function(key) {
+        sortedData[key] = requestData[key];
+    });
+
+    const queryString = querystring.stringify(sortedData);
+    const hash = crypto.createHash('sha1').update(this.salt + queryString).digest('hex');
+
+    return key === hash;
+}
+
   
 }
 
