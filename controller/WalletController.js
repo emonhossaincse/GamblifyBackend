@@ -78,59 +78,47 @@ async debit(req, res) {
   try {
       const { remote_id, username, amount, transaction_id } = req.query;
 
-      // Acquire the mutex lock
-      const release = await this.mutex.acquire();
+      // Find the user
+      const user = await User.findOne({ remote_id, username });
 
-      try {
-          // Find the user and lock the document
-          const user = await User.findOneAndUpdate(
-              { remote_id, username },
-              { $set: { locked: true } },
-              { new: true }
-          );
-
-          if (!user) {
-              return res.status(404).json({ status: '404', message: 'User not found or insufficient funds' });
-          }
-
-          if (amount > user.balance) {
-              return res.status(403).json({ status: '403', message: 'Insufficient funds' });
-          }
-
-          // Check if the transaction already exists
-          const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
-          if (existingTransaction) {
-              return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
-          }
-
-          if (amount < 0) {
-              return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
-          }
-
-          // Create the transaction
-          await Transaction.create({
-              action: 'debit',
-              remote_id,
-              amount,
-              transaction_id,
-              provider: req.query.provider,
-              game_id: req.query.game_id,
-              gameplay_final: req.query.gameplay_final,
-              round_id: req.query.round_id,
-              game_id_hash: req.query.game_id_hash,
-              session_id: req.query.session_id,
-              gamesession_id: req.query.gamesession_id,
-          });
-
-          // Update the user's balance
-          user.balance -= amount;
-          await user.save();
-
-          return res.status(200).json({ status: '200', balance: user.balance });
-      } finally {
-          // Release the lock
-          release();
+      if (!user) {
+          return res.status(404).json({ status: '404', message: 'User not found or insufficient funds' });
       }
+
+      if (amount > user.balance) {
+          return res.status(403).json({ status: '403', message: 'Insufficient funds' });
+      }
+
+      // Check if the transaction already exists
+      const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
+      if (existingTransaction) {
+          return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
+      }
+
+      if (amount < 0) {
+          return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
+      }
+
+      // Create the transaction
+      await Transaction.create({
+          action: 'debit',
+          remote_id,
+          amount,
+          transaction_id,
+          provider: req.query.provider,
+          game_id: req.query.game_id,
+          gameplay_final: req.query.gameplay_final,
+          round_id: req.query.round_id,
+          game_id_hash: req.query.game_id_hash,
+          session_id: req.query.session_id,
+          gamesession_id: req.query.gamesession_id,
+      });
+
+      // Update the user's balance
+      user.balance -= amount;
+      await user.save();
+
+      return res.status(200).json({ status: '200', balance: user.balance });
   } catch (error) {
       console.error('Error debiting balance:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error' });
