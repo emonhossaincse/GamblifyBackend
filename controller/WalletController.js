@@ -40,7 +40,7 @@ class WalletController {
     }
 
     try {
-      const { remote_id, username, session_id } = req.query;
+      const { remote_id, username } = req.query;
 
       const user = await User.findOne({ remote_id, username }).select('balance');
 
@@ -85,6 +85,12 @@ class WalletController {
       if (amount < 0) {
         return res.status(403).json({ status: '403', message: 'Negative amount not allowed' });
       }
+      const transaction = await Transaction.findOne({ transaction_id });
+
+      if (transaction) {
+        return res.status(200).json({ status: '200', balance: user.balance });
+    }
+
 
       await Transaction.create({
         action: 'debit',
