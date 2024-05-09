@@ -34,9 +34,10 @@ class WalletController {
 
   async getBalance(req, res) {
     if (!this.checkRequestIntegrity(req)) {
-       const reqdata = req.body;
-      return res.status(403).json({ status: '403', message: `Request integrity check failed ${reqdata}` });
-    }
+      const reqdata = req.body;
+      return res.status(403).json({ status: '403', message: `Request integrity check failed ${JSON.stringify(reqdata)}` });
+  }
+  
 
     try {
       const { remote_id, username, session_id } = req.body;
