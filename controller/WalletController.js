@@ -34,12 +34,13 @@ class WalletController {
 
   async getBalance(req, res) {
     if (!this.checkRequestIntegrity(req)) {
-       const reqdata = req.body;
-      return res.status(403).json({ status: '403', message: `Request integrity check failed ${reqdata}` });
+       const reqdata = req.query;
+       return res.status(403).json({ status: '403', message: `Request integrity check failed ${JSON.stringify(reqdata)}` });
+
     }
 
     try {
-      const { remote_id, username, session_id } = req.body;
+      const { remote_id, username, session_id } = req.query;
 
       const user = await User.findOne({ remote_id, username }).select('balance');
 
@@ -65,7 +66,7 @@ class WalletController {
     }
 
     try {
-      const { remote_id, username, amount, transaction_id } = req.body;
+      const { remote_id, username, amount, transaction_id } = req.query;
 
       const user = await User.findOneAndUpdate(
         { remote_id, username, balance: { $gte: amount } },
@@ -82,13 +83,13 @@ class WalletController {
         remote_id,
         amount,
         transaction_id,
-        provider: req.body.provider,
-        game_id: req.body.game_id,
-        gameplay_final: req.body.gameplay_final,
-        round_id: req.body.round_id,
-        game_id_hash: req.body.game_id_hash,
-        session_id: req.body.session_id,
-        gamesession_id: req.body.gamesession_id,
+        provider: req.query.provider,
+        game_id: req.query.game_id,
+        gameplay_final: req.query.gameplay_final,
+        round_id: req.query.round_id,
+        game_id_hash: req.query.game_id_hash,
+        session_id: req.query.session_id,
+        gamesession_id: req.query.gamesession_id,
       });
 
       return res.status(200).json({ status: '200', balance: user.balance });
@@ -109,7 +110,7 @@ class WalletController {
     }
   
     try {
-      const { remote_id, username, amount, transaction_id } = req.body;
+      const { remote_id, username, amount, transaction_id } = req.query;
   
       const user = await User.findOneAndUpdate(
         { remote_id, username },
@@ -134,14 +135,14 @@ class WalletController {
         action: 'credit',
         remote_id,
         amount,
-        provider: req.body.provider,
-        game_id: req.body.game_id,
+        provider: req.query.provider,
+        game_id: req.query.game_id,
         transaction_id,
-        gameplay_final: req.body.gameplay_final,
-        round_id: req.body.round_id,
-        game_id_hash: req.body.game_id_hash,
-        session_id: req.body.session_id,
-        gamesession_id: req.body.gamesession_id,
+        gameplay_final: req.query.gameplay_final,
+        round_id: req.query.round_id,
+        game_id_hash: req.query.game_id_hash,
+        session_id: req.query.session_id,
+        gamesession_id: req.query.gamesession_id,
       });
   
       user.balance += amount;
@@ -157,7 +158,7 @@ class WalletController {
 
   async rollback(req, res) {
     try {
-      const { remote_id, username, transaction_id, session_id } = req.body;
+      const { remote_id, username, transaction_id, session_id } = req.query;
   
       const user = await User.findOneAndUpdate(
         { remote_id, username },
@@ -204,7 +205,6 @@ class WalletController {
     }
   }
   
-
   checkRequestIntegrity(req) {
     const requestData = { ...req.query };
     const key = requestData.key;
@@ -220,6 +220,7 @@ class WalletController {
 
     return key === hash;
 }
+
 
   
 }
