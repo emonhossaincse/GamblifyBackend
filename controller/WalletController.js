@@ -33,7 +33,10 @@ class WalletController {
   
 
   async getBalance(req, res) {
-    
+    if (!this.checkRequestIntegrity(req)) {
+       const reqdata = req.body;
+      return res.status(403).json({ status: '403', message: `Request integrity check failed ${reqdata}` });
+    }
 
     try {
       const { remote_id, username, session_id } = req.body;
@@ -52,7 +55,9 @@ class WalletController {
   }
 
   async debit(req, res) {
-   
+    if (!this.checkRequestIntegrity(req)) {
+      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
+    }
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -94,7 +99,9 @@ class WalletController {
   }
 
   async credit(req, res) {
-  
+    if (!this.checkRequestIntegrity(req)) {
+      return res.status(403).json({ status: '403', message: 'Request integrity check failed' });
+    }
   
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -199,7 +206,7 @@ class WalletController {
   
 
   checkRequestIntegrity(req) {
-    const requestData = { ...req.body };
+    const requestData = { ...req.query };
     const key = requestData.key;
     delete requestData.key;
 
