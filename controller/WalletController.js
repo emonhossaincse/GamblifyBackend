@@ -69,8 +69,7 @@ class WalletController {
       const { remote_id, username, amount, transaction_id } = req.query;
 
       const user = await User.findOneAndUpdate(
-        { remote_id, username, balance: { $gte: amount } },
-        { $inc: { balance: -amount } },
+        { remote_id, username },
         { new: true }
       );
 
@@ -91,6 +90,8 @@ class WalletController {
         session_id: req.query.session_id,
         gamesession_id: req.query.gamesession_id,
       });
+      user.balance -= amount;
+      await user.save();
 
       return res.status(200).json({ status: '200', balance: user.balance });
     } catch (error) {
@@ -116,7 +117,6 @@ class WalletController {
   
       const user = await User.findOneAndUpdate(
         { remote_id, username },
-        { $inc: { balance: amount } },
         { new: true }
       );
   
