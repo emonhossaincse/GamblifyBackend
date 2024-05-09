@@ -110,7 +110,9 @@ class WalletController {
     }
   
     try {
-      const { remote_id, username, amount, transaction_id } = req.query;
+      const { remote_id, username, transaction_id } = req.query;
+      let { amount } = req.query;
+      amount = parseInt(amount); // Convert amount to number
   
       const user = await User.findOneAndUpdate(
         { remote_id, username },
@@ -153,8 +155,8 @@ class WalletController {
       console.error('Error crediting balance:', error);
       return res.status(500).json({ status: '500', message: 'Internal server error' });
     }
-  }
-  
+}
+
 
   async rollback(req, res) {
     try {

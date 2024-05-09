@@ -61,7 +61,8 @@ const userSchema = new mongoose.Schema({
   
   },
   balance: {
-    type: String,
+    type: Number, // Define balance as a Number type
+    default: 0, // Set a default value if needed
   
   },
   status: {
@@ -88,7 +89,6 @@ const userSchema = new mongoose.Schema({
     default: 'User'
   }
 }, { timestamps: true, }); // Enable timestamps option
-
 
 const User = mongoose.model('User', userSchema);
 
