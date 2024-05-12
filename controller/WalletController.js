@@ -92,7 +92,7 @@ async debit(req, res) {
       // Check if the transaction already exists
       const existingTransaction = await Transaction.findOne({ transaction_id, remote_id });
       if (existingTransaction) {
-          return res.status(200).json({ status: '200', balance: user.balance, 'valid amount': 'false' });
+          return res.status(200).json({ status: '200', balance: user.balance});
       }
 
       if (amount < 0) {
