@@ -1,7 +1,7 @@
 const axios = require('axios');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
-const jwt = require('jsonwebtoken');
+const User = require('../models/UserModel');
 
 const BogApiService = {
   baseUrl: process.env.API_BASE_URL,
@@ -20,15 +20,7 @@ const BogApiService = {
         currency: 'EUR',
       });
 
-      const responseData = response.data;
-
-      if (responseData.error === 0) {
-        console.log('Player Login Successful', responseData.response);
-      } else {
-        console.error('Player Login Failed', responseData.message);
-      }
-
-      return responseData;
+      return response.data;
     } catch (error) {
       console.error('HTTP Request Error:', error.message);
       return { error: 1, message: 'Error in API request' };
@@ -36,39 +28,38 @@ const BogApiService = {
   },
 
   async getGameDirect(gameId, lang = 'en', playForFun = false, homeUrl, req) {
-    const token = req.headers.authorization;
+    try {
+      // Retrieve user from the database using the username from the request
+      const username = req.body.username; // Assume the username is sent in the request body
+      const user = await User.findOne({ username });
 
-    if (token) {
-      try {
-        const decoded = jwt.verify(token.split(' ')[1], process.env.ACCESS_TOKEN_SECRET);
-        const username = decoded.username;
-
-        const requestData = {
-          api_password: this.apiPassword,
-          api_login: this.apiLogin,
-          method: 'getGameDirect',
-          lang: lang,
-          user_username: username,
-          gameid: gameId,
-          homeurl: homeUrl,
-          play_for_fun: playForFun,
-          currency: 'EUR',
-        };
-
-        const response = await axios.post(this.baseUrl, requestData);
-        const responseData = response.data;
-
-        if (responseData.error === 1) {
-          console.error('API Error:', responseData.message);
-        }
-
-        return responseData;
-      } catch (error) {
-        console.error('Error decoding token:', error.message);
-        return { error: 1, message: 'Error decoding token' };
+      if (!user || !user.token) {
+        return { error: 1, message: 'User not found or token missing' };
       }
-    } else {
-      return { error: 1, message: 'Token not provided' };
+
+      const requestData = {
+        api_password: this.apiPassword,
+        api_login: this.apiLogin,
+        method: 'getGameDirect',
+        lang: lang,
+        user_username: user.username,
+        gameid: gameId,
+        homeurl: homeUrl,
+        play_for_fun: playForFun,
+        currency: 'EUR',
+      };
+
+      const response = await axios.post(this.baseUrl, requestData);
+      const responseData = response.data;
+
+      if (responseData.error === 1) {
+        console.error('API Error:', responseData.message);
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error('Error in getGameDirect:', error.message);
+      return { error: 1, message: 'Error in API request' };
     }
   },
 
