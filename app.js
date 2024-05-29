@@ -54,6 +54,7 @@ app.use('/place-balance', walletrouter);
 app.use('/faq', faqRouter);
 app.use('/logos', logosRoute);
 app.use('/game-list', GameRouter);
+
 app.use('/general', generalRouter);
 
 // Error handling middleware

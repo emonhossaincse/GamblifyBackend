@@ -34,15 +34,13 @@ const BogApiService = {
     }
   },
 
-  async getGameDirect(gameId, lang = 'en', playForFun = false, homeUrl, user) {
-    if (user) {
+  async getGameDirect(gameId, lang = 'en', playForFun = false, homeUrl) {
+   
       const requestData = {
         api_password: this.apiPassword, // Use this.apiPassword
         api_login: this.apiLogin, // Use this.apiLogin
         method: 'getGameDirect',
         lang: lang,
-        user_username: user.username,
-        user_password: user.password,
         gameid: gameId,
         homeurl: homeUrl,
         play_for_fun: playForFun,
@@ -62,9 +60,7 @@ const BogApiService = {
         console.error('HTTP Request Error:', error.message);
         return { error: 1, message: 'Error in API request' };
       }
-    } else {
-      return { error: 1, message: 'User not authenticated' };
-    }
+    
   },
 
   async playerExists(username) {

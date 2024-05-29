@@ -12,7 +12,7 @@ const GameController = {
             }
 
             // Get user from authentication (if you have authentication middleware)
-            const user = req.user;
+            
 
             // Instantiate BogApiService
             const service = new BogApiService();
@@ -23,7 +23,7 @@ const GameController = {
                 req.body.lang,
                 req.body.play_for_fun,
                 req.body.home_url,
-                user
+                
             );
 
             // Send response
