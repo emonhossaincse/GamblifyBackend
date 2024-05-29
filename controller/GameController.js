@@ -1,11 +1,11 @@
 const { validationResult } = require('express-validator');
-const BogApiService = require('../services/BogApiService');
+
 
 const GameController = {
     run: async (req, res) => {
         try {
             // Log all request data
-            console.log(req);
+            console.log(req.body);
             
             // Accessing data from request body
             const { game_id, lang, play_for_fun, home_url } = req.body;
