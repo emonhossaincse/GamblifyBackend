@@ -16,7 +16,7 @@ GameRouter.get('/', (req, res) => {
     res.json(results);
   });
 });
-GameRouter.post('game/run', GameController.run);
+// GameRouter.post('game/run', GameController.run);
 
 
   GameRouter.get('/games', viewGames);
