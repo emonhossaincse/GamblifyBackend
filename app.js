@@ -25,12 +25,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 
 // Define CORS middleware to allow requests from any origin
-app.use(cors());
-app.use(
-    helmet({
-      crossOriginResourcePolicy: false,
-    })
-  );
+app.use(cors({
+    origin: '*', // Change this to specific origins if needed
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add other methods if necessary
+    allowedHeaders: ['Content-Type', 'Authorization'] // Add other headers if necessary
+  }));
 
 const rateLimiter = rateLimit({
     windowMS: 1 * 60 * 1000, // 1 min
