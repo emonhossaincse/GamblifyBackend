@@ -1,5 +1,6 @@
 const express = require('express');
 const { searchInJsonFile, createGame, updateGame, deleteGame, viewGames, viewGameById } = require('../controller/GameListController');
+const GameController = require('../controller/GameController');
 const GameRouter = express.Router();
 
 GameRouter.get('/', (req, res) => {
@@ -15,6 +16,7 @@ GameRouter.get('/', (req, res) => {
     res.json(results);
   });
 });
+GameRouter.post('game/run', GameController.run);
 
 
   GameRouter.get('/games', viewGames);
