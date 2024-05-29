@@ -141,6 +141,7 @@ const login = async (req, res) => {
             balance: user.balance,
             session_id: user.session_id,
             token: token,
+            username: username,
         });
     } catch (error) {
         console.error('Error during login:', error.message);
