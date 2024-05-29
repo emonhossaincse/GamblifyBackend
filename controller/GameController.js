@@ -4,34 +4,14 @@ const BogApiService = require('../services/BogApiService');
 const GameController = {
     run: async (req, res) => {
         try {
-            // Validation rules
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) {
-                const message = errors.array()[0].msg;
-                return res.status(400).json({ status: false, message });
-            }
-
-            // Get user from authentication (if you have authentication middleware)
+            // Log all request data
+            console.log(req);
             
-
-            // Instantiate BogApiService
-            const service = new BogApiService();
-
-            // Call the getGameDirect method with the provided parameters
-            const response = await service.getGameDirect(
-                req.body.game_id,
-                req.body.lang,
-                req.body.play_for_fun,
-                req.body.home_url,
-                
-            );
-
-            // Send response
-            res.json({
-                status: true,
-                message: 'Game Details',
-                response
-            });
+            // Accessing data from request body
+            const { game_id, lang, play_for_fun, home_url } = req.body;
+            
+            // Validate and process the data here
+            
         } catch (error) {
             // Handle errors
             console.error('Error in GameController.run:', error);
@@ -39,5 +19,6 @@ const GameController = {
         }
     }
 };
+
 
 module.exports = GameController;
