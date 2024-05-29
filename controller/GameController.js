@@ -5,15 +5,9 @@ const GameController = {
     run: async (req, res) => {
         try {
             // Validation rules
-            req.checkBody('game_id').notEmpty().isNumeric();
-            req.checkBody('lang').notEmpty().isString();
-            req.checkBody('play_for_fun').notEmpty().isBoolean();
-            req.checkBody('home_url').notEmpty().isString();
-
-            // Execute validation
-            const errors = req.validationErrors();
-            if (errors) {
-                const message = errors[0].msg;
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                const message = errors.array()[0].msg;
                 return res.status(400).json({ status: false, message });
             }
 
