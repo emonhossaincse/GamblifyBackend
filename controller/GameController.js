@@ -1,5 +1,5 @@
 const { validationResult } = require('express-validator');
-const BogApiService = require('/../Services/BogApiService');
+const BogApiService = require('../services/BogApiService');
 
 const GameController = {
     run: async (req, res) => {

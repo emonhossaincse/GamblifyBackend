@@ -12,11 +12,11 @@ GameRouter.get('/', (req, res) => {
       res.status(500).send('Internal Server Error');
       return;
     }
-    console.log("Number of results:", results.length); // Log the number of results
+    console.log("Number of results:", results.length);
     res.json(results);
   });
 });
-// GameRouter.post('game/run', GameController.run);
+GameRouter.post('game/run', GameController.run);
 
 
   GameRouter.get('/games', viewGames);
