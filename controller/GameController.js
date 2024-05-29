@@ -30,6 +30,7 @@ const GameController = {
                 req.body.lang,
                 req.body.play_for_fun,
                 req.body.home_url,
+                req,
                 token // Pass the token directly instead of req object
             );
 

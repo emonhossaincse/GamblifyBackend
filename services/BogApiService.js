@@ -26,42 +26,45 @@ const BogApiService = {
       return { error: 1, message: 'Error in API request' };
     }
   },
-
-  async getGameDirect(gameId, lang = 'en', playForFun = false, homeUrl, req) {
+  async getGameDirect(gameId, lang, playForFun, homeUrl, req) {
     try {
-      // Retrieve user from the database using the username from the request
-      const username = req.body.username; // Assume the username is sent in the request body
-      const user = await User.findOne({ username });
+        // Retrieve user from the database using the username from the request
+        const username = req.body.username; // Assuming the username is sent in the request body
+        const user = await User.findOne({ username });
 
-      if (!user || !user.token) {
-        return { error: 1, message: 'User not found or token missing' };
-      }
+        if (!user || !user.token) {
+            return { error: 1, message: 'User not found or token missing' };
+        }
+        const userPassword = req.body.password;  //this is username password we need to decode it 
+        
 
-      const requestData = {
-        api_password: this.apiPassword,
-        api_login: this.apiLogin,
-        method: 'getGameDirect',
-        lang: lang,
-        user_username: user.username,
-        gameid: gameId,
-        homeurl: homeUrl,
-        play_for_fun: playForFun,
-        currency: 'EUR',
-      };
 
-      const response = await axios.post(this.baseUrl, requestData);
-      const responseData = response.data;
+        const response = await axios.post(this.baseUrl, {
+            api_password: this.apiPassword,
+            api_login: this.apiLogin,
+            method: 'getGameDirect',
+            lang: lang,
+            user_username: user.username,
+            user_password: userPassword, 
+            gameid: gameId,
+            homeurl: homeUrl,
+            play_for_fun: playForFun,
+            currency: 'EUR',
+        });
 
-      if (responseData.error === 1) {
-        console.error('API Error:', responseData.message);
-      }
+        const responseData = response.data;
 
-      return responseData;
+        if (responseData.error === 1) {
+            console.error('API Error:', responseData.message);
+        }
+
+        return responseData;
     } catch (error) {
-      console.error('Error in getGameDirect:', error.message);
-      return { error: 1, message: 'Error in API request' };
+        console.error('Error in getGameDirect:', error.message);
+        return { error: 1, message: `Error in API request` };
     }
-  },
+},
+
 
   async playerExists(username) {
     try {
