@@ -1,23 +1,31 @@
 const { validationResult } = require('express-validator');
+const BogApiService = require('../services/BogApiService');
 
 const GameController = {
     run: async (req, res) => {
         try {
-            // Accessing data from request body
-            const { game_id, lang, play_for_fun, home_url } = req.body;
+            // Validation rules
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                const message = errors.array()[0].msg;
+                return res.status(400).json({ status: false, message });
+            }
 
-            // Log the request data
-            console.log('Request Data:', req.body);
-            
-            // You can also send the request data back in the response
-            res.status(200).json({
+            // Call the getGameDirect method of BogApiService
+            const response = await BogApiService.getGameDirect(
+                req.body.game_id,
+                req.body.lang,
+                req.body.play_for_fun,
+                req.body.home_url,
+                req // Pass the req object to getGameDirect
+            );
+
+            // Send response
+            res.json({
                 status: true,
-                message: 'Request data received successfully',
-                data: req.body
+                message: 'Game Details',
+                response
             });
-            
-            // Validate and process the data here
-            
         } catch (error) {
             // Handle errors
             console.error('Error in GameController.run:', error);

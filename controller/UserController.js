@@ -4,6 +4,7 @@ const Transaction = require('../models/TransactionModel');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const secretKey = crypto.randomBytes(32).toString('hex');
+const jwt = require('jsonwebtoken'); // Import JWT library
 
 
 
@@ -116,7 +117,6 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-const jwt = require('jsonwebtoken'); // Import JWT library
 
 const login = async (req, res) => {
     try {
@@ -164,6 +164,7 @@ const login = async (req, res) => {
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 
 const countUsers = async (req, res, next) => {
   try {
