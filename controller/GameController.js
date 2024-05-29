@@ -1,14 +1,20 @@
 const { validationResult } = require('express-validator');
 
-
 const GameController = {
     run: async (req, res) => {
         try {
-            // Log all request data
-            console.log(req.body);
-            
             // Accessing data from request body
             const { game_id, lang, play_for_fun, home_url } = req.body;
+
+            // Log the request data
+            console.log('Request Data:', req.body);
+            
+            // You can also send the request data back in the response
+            res.status(200).json({
+                status: true,
+                message: 'Request data received successfully',
+                data: req.body
+            });
             
             // Validate and process the data here
             
@@ -19,6 +25,5 @@ const GameController = {
         }
     }
 };
-
 
 module.exports = GameController;
