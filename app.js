@@ -16,6 +16,7 @@ const path = require('path');
 const generalRouter = require('./routers/GeneralRouter');
 const { connectDB } = require('./config/db');
 const { serverPort } = require('./secret');
+const Affiliaterouter = require('./routers/AffiliateRouter');
 
 const app = express();
 app.use(xss());
@@ -24,15 +25,15 @@ app.use(bodyparser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
 
-// Define CORS middleware to allow requests from any origin
+
 app.use(cors({
-    origin: '*', // Change this to specific origins if needed
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add other methods if necessary
-    allowedHeaders: ['Content-Type', 'Authorization'] // Add other headers if necessary
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+    allowedHeaders: ['Content-Type', 'Authorization'] 
   }));
 
 const rateLimiter = rateLimit({
-    windowMS: 1 * 60 * 1000, // 1 min
+    windowMS: 1 * 60 * 1000, 
     max: 5,
     message: 'Too Many Request',
 });
@@ -48,6 +49,7 @@ const uploadsPath = path.join(__dirname, './uploads');
 app.use('/uploads', express.static(uploadsPath));
 
 // Define routes
+
 app.use('/users', userRouter);
 app.use('/seed', seedRouter);
 app.use('/place-balance', walletrouter);
@@ -56,6 +58,9 @@ app.use('/logos', logosRoute);
 app.use('/game-list', GameRouter);
 
 app.use('/general', generalRouter);
+
+app.use('/affiliate', Affiliaterouter);
+
 
 // Error handling middleware
 app.use((req, res, next) => {

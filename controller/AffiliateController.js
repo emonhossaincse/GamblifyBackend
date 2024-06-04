@@ -100,7 +100,7 @@ const calculateBonus = (wager, level) => {
 };
 
 // Controller function to handle affiliate commission and ranking logic
-exports.handleAffiliateAndRanking = async (userId) => {
+const handleAffiliateAndRanking = async (userId) => {
   try {
     // Find the user's affiliate details
     const affiliate = await Affiliate.findOne({ user: userId });
@@ -117,6 +117,9 @@ exports.handleAffiliateAndRanking = async (userId) => {
       await Affiliate.findOneAndUpdate({ user: userId }, { commissionClaimed: true });
       // Add commission to user's account balance or perform other actions
       const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
       user.balance += commission;
       await user.save();
     }
@@ -181,3 +184,35 @@ exports.handleAffiliateAndRanking = async (userId) => {
     throw new Error('Error handling affiliate and ranking');
   }
 };
+
+// Controller function to handle affiliate creation
+const createAffiliate = async (userId, referrals, totalWagerByReferrals, commissionClaimed = false) => {
+  try {
+    console.log(`Creating affiliate for userId: ${userId}, referrals: ${referrals}, totalWagerByReferrals: ${totalWagerByReferrals}, commissionClaimed: ${commissionClaimed}`);
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Create a new affiliate entry
+    const newAffiliate = new Affiliate({
+      user: userId,
+      referrals,
+      totalWagerByReferrals,
+      commissionClaimed,
+    });
+
+    // Save the affiliate entry to the database
+    await newAffiliate.save();
+
+    console.log('Affiliate created successfully:', newAffiliate);
+    return newAffiliate;
+  } catch (error) {
+    console.error('Error creating affiliate:', error);
+    throw new Error('Error creating affiliate');
+  }
+};
+
+module.exports = { handleAffiliateAndRanking, createAffiliate };
